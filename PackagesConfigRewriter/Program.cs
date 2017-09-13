@@ -8,39 +8,61 @@ using System.Xml.Linq;
 
 namespace PackagesConfigRewriter
 {
-    class Program
+    public static class Program
     {
         static void Main(string[] args)
         {
-            string fileName = args[0];//Path.Combine(Directory.GetCurrentDirectory(), "packages.config");
-            if (File.Exists(fileName))
+            DirectoryInfo solutionDirectory = new DirectoryInfo(args[0]);
+            IEnumerable<Solution> solutions = CreateSolutionFiles(solutionDirectory.EnumerateFiles("*.sln"));
+            foreach (Solution solution in solutions)
             {
-                XDocument document = XDocument.Load(fileName);
-                var elements = document.Root.Elements("package").ToList();
-                elements.Reverse();
-                elements.ForEach(x => Change(x));
-                document.Root.Name = "ItemGroup";
-                document.Save(fileName);
+                List<Project> msBuildProjects = new List<Project>();
+                bool hasSdkProjects = false;
+                bool hasWebApplicationProjects = false;
+                foreach (Project project in solution.Projects)
+                {
+                    if (project.IsMsBuildProject)
+                    {
+                        msBuildProjects.Add(project);
+                    }
+                    else
+                    {
+                        hasSdkProjects = true;
+                    }
+                    hasWebApplicationProjects = hasWebApplicationProjects || project.IsWebApplication;
+                }
+                if (hasSdkProjects)
+                {
+                    List<ProjectFix> fixes = new List<ProjectFix>() { new UsePackageReferencesFix() };
+                    if (hasWebApplicationProjects)
+                    {
+                        fixes.Add(new ApplyWorkAroundFix());
+                    }
+                    foreach (Project msBuildProject in msBuildProjects)
+                    {
+                        foreach (ProjectFix fix in fixes)
+                        {
+                            msBuildProject.Apply(fix);
+                        }
+                    }
+                }
             }
         }
 
-        private static void Change(XElement element)
+        internal static void Apply(this Project project, ProjectFix fix)
         {
-            element.Name = "PackageReference";
-            foreach (XAttribute attribute in element.Attributes().Reverse().ToList())
+            if (!fix.AlreadyAppliedTo(project))
             {
-                if (attribute.Name == "id")
-                {
-                    element.SetAttributeValue("Include", attribute.Value);
-                }
-                else
-                {
-                    if(attribute.Name == "version")
-                    {
-                        element.SetAttributeValue("Version", attribute.Value);
-                    }
-                }
-                attribute.Remove();
+                fix.Fix(project);
+                project.Save();
+            }
+        }
+
+        private static IEnumerable<Solution> CreateSolutionFiles(IEnumerable<FileInfo> solutionFiles)
+        {
+            foreach (FileInfo solutionFile in solutionFiles)
+            {
+                yield return new Solution(solutionFile);
             }
         }
     }
