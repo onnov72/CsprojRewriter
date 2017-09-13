@@ -15,7 +15,7 @@ namespace PackagesConfigRewriter
         private readonly XName PackageElementName = "package";
         private readonly XName PackageReferenceElement = Project.MsBuildNamespace + ProjectRestoreStyleValue;
         private readonly XName PackageIdAttribute ="id";
-        private readonly XName MsBuildVersionAttribute = Project.MsBuildNamespace + "Version";
+        private readonly XName MsBuildVersionAttribute = "Version";
         private readonly XName PackageVersionAttribute = "version";
 
         // <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
@@ -74,6 +74,11 @@ namespace PackagesConfigRewriter
         private FileInfo GetProjectPackagesConfigFile(Project project)
         {
             return new FileInfo(Path.Combine(project.File.Directory.FullName, "packages.config"));
+        }
+
+        public override string ToString()
+        {
+            return "use PackageReference instead of packages.config";
         }
     }
 }

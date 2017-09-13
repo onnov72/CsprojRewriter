@@ -7,13 +7,16 @@ namespace PackagesConfigRewriter
 {
     internal class Solution
     {
-        private FileInfo _solutionFile;
+        private readonly FileInfo _solutionFile;
         private List<Project> _projects = null;
 
         public Solution(FileInfo solutionFile)
         {
             _solutionFile = solutionFile ?? throw new ArgumentNullException(nameof(solutionFile));
+            Name = Path.GetFileNameWithoutExtension(_solutionFile.Name);
         }
+
+        public string Name { get; }
 
         public IEnumerable<Project> Projects => GetProjects();
 
@@ -53,7 +56,7 @@ namespace PackagesConfigRewriter
         private bool TryParseProjectLine(string line, out Project project)
         {
             project = default;
-            var parts = line.Split('=');
+            string[] parts = line.Split('=');
             if (parts.Length != 2)
             {
                 return false;
@@ -70,7 +73,11 @@ namespace PackagesConfigRewriter
             {
                 return false;
             }
-            project = new Project(projectFile);
+            if (!projectFile.Extension.Equals(".csproj", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+            project = Project.Create(projectFile);
             return true;
         }
 
@@ -78,12 +85,12 @@ namespace PackagesConfigRewriter
         {
             using (TextReader reader = _solutionFile.OpenText())
             {
-                string line;
-                do
+                string line = reader.ReadLine();
+                while (line != null)
                 {
-                    line = reader.ReadLine();
                     yield return line;
-                } while (line != null);
+                    line = reader.ReadLine();
+                }
             }
         }
     }

@@ -16,6 +16,7 @@ namespace PackagesConfigRewriter
             IEnumerable<Solution> solutions = CreateSolutionFiles(solutionDirectory.EnumerateFiles("*.sln"));
             foreach (Solution solution in solutions)
             {
+                Console.WriteLine($"Inspecting solution {solution.Name}");
                 List<Project> msBuildProjects = new List<Project>();
                 bool hasSdkProjects = false;
                 bool hasWebApplicationProjects = false;
@@ -54,7 +55,10 @@ namespace PackagesConfigRewriter
             if (!fix.AlreadyAppliedTo(project))
             {
                 fix.Fix(project);
-                project.Save();
+                if(project.Save())
+                {
+                    Console.WriteLine($"Applied {fix} to project {project.File.Name}");
+                }
             }
         }
 

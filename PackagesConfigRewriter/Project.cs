@@ -30,14 +30,14 @@ namespace PackagesConfigRewriter
                 throw new System.ArgumentNullException(nameof(projectFile));
             }
 
-            return new Project(projectFile, Load(projectFile.FullName, LoadOptions.PreserveWhitespace));
+            return new Project(projectFile, Load(projectFile.FullName));
         }
 
         public bool Save()
         {
             if (_dirty)
             {
-                Save(_projectFile.FullName, SaveOptions.DisableFormatting);
+                Save(_projectFile.FullName);
                 _dirty = false;
                 return true;
             }

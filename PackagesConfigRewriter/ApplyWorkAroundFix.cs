@@ -11,7 +11,7 @@ namespace PackagesConfigRewriter
         private readonly XName BeforeTargetsAttribute = "BeforeTargets";
         private readonly XName ReferencePathElement = Project.MsBuildNamespace + "ReferencePath";
         private readonly XName RemoveAttribute = "Remove";
-        private readonly XName ConditionAttribute;
+        private readonly XName ConditionAttribute = "Condition";
 
         internal override bool AlreadyAppliedTo(Project project)
         {
@@ -29,7 +29,7 @@ namespace PackagesConfigRewriter
              */
             if (!AlreadyAppliedTo(project))
             {
-                project.Add(new XElement(TargetElement,
+                project.Root.Add(new XElement(TargetElement,
                     new XAttribute(NameAttribute, WorkAroundName),
                     new XAttribute(BeforeTargetsAttribute, "BuiltProjectOutputGroupDependencies"),
                     new XElement(Project.ItemGroupElement,
@@ -37,6 +37,11 @@ namespace PackagesConfigRewriter
                             new XAttribute(RemoveAttribute, "@(ReferencePath)"),
                             new XAttribute(ConditionAttribute, "'%(FileName)' == 'netfx.force.conflicts'")))));
             }
+        }
+
+        public override string ToString()
+        {
+            return "fix for \"Could not load file or assembly 'netfx.force.conflicts'\"";
         }
     }
 }
