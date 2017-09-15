@@ -12,29 +12,35 @@ namespace PackagesConfigRewriter
     {
         static void Main(string[] args)
         {
+            bool forceFix = true;
             DirectoryInfo solutionDirectory = new DirectoryInfo(args[0]);
             IEnumerable<Solution> solutions = CreateSolutionFiles(solutionDirectory.EnumerateFiles("*.sln"));
             foreach (Solution solution in solutions)
             {
                 Console.WriteLine($"Inspecting solution {solution.Name}");
                 List<Project> msBuildProjects = new List<Project>();
-                bool hasSdkProjects = false;
+                bool usesPackageReferences = false;
                 bool hasWebApplicationProjects = false;
                 foreach (Project project in solution.Projects)
                 {
                     if (project.IsMsBuildProject)
                     {
                         msBuildProjects.Add(project);
+                        usesPackageReferences = usesPackageReferences || UsePackageReferencesFix.UsesPackageReference(project);
                     }
                     else
                     {
-                        hasSdkProjects = true;
+                        usesPackageReferences = true;
                     }
                     hasWebApplicationProjects = hasWebApplicationProjects || project.IsWebApplication;
                 }
-                if (hasSdkProjects)
+                if (forceFix || usesPackageReferences)
                 {
-                    List<ProjectFix> fixes = new List<ProjectFix>() { new UsePackageReferencesFix() };
+                    List<ProjectFix> fixes = new List<ProjectFix>()
+                    {
+                        new UsePackageReferencesFix(),
+                        new AddAutoGenerateBindingRedirectsFix()
+                    };
                     if (hasWebApplicationProjects)
                     {
                         fixes.Add(new ApplyWorkAroundFix());

@@ -7,26 +7,36 @@ namespace PackagesConfigRewriter
     {
         private const string WorkAroundName = "RemoveNetFxForceConflicts";
         private static readonly XName TargetElement = Project.MsBuildNamespace + "Target";
-        private readonly XName NameAttribute = "Name";
-        private readonly XName BeforeTargetsAttribute = "BeforeTargets";
-        private readonly XName ReferencePathElement = Project.MsBuildNamespace + "ReferencePath";
-        private readonly XName RemoveAttribute = "Remove";
-        private readonly XName ConditionAttribute = "Condition";
+        private static readonly XName NameAttribute = "Name";
+        private static readonly XName BeforeTargetsAttribute = "BeforeTargets";
+        private static readonly XName ReferencePathElement = Project.MsBuildNamespace + "ReferencePath";
+        private static readonly XName RemoveAttribute = "Remove";
+        private static readonly XName ConditionAttribute = "Condition";
 
         internal override bool AlreadyAppliedTo(Project project)
         {
+            if (project == null)
+            {
+                throw new System.ArgumentNullException(nameof(project));
+            }
+
             return project.IsMsBuildProject && project.Root.Elements(TargetElement).Attributes(NameAttribute).Any(x => x.Value == WorkAroundName);
         }
 
+        /*
+        <Target Name="RemoveNetFxForceConflicts" BeforeTargets="BuiltProjectOutputGroupDependencies">
+            <ItemGroup>
+                 <ReferencePath Remove="@(ReferencePath)" Condition="'%(FileName)' == 'netfx.force.conflicts'" />
+            </ItemGroup>
+        </Target>
+        */
         internal override void Fix(Project project)
         {
-            /*
-              <Target Name="RemoveNetFxForceConflicts" BeforeTargets="BuiltProjectOutputGroupDependencies">
-                <ItemGroup>
-                  <ReferencePath Remove="@(ReferencePath)" Condition="'%(FileName)' == 'netfx.force.conflicts'" />
-                </ItemGroup>
-              </Target>
-             */
+            if (project == null)
+            {
+                throw new System.ArgumentNullException(nameof(project));
+            }
+
             if (!AlreadyAppliedTo(project))
             {
                 project.Root.Add(new XElement(TargetElement,
